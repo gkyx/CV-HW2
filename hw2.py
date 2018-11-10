@@ -2,6 +2,7 @@ import cv2
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from math import floor, pi, exp
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 ############
@@ -157,18 +158,20 @@ class Window(QtWidgets.QMainWindow):
 
 
 	def open_image(self):
-		# one function for both of the input and target images
-		if not self.isInputOpen:
-			# Image
+		# Image
+		self.Img = cv2.imread("color1.png")
 
-			pix = QtGui.QPixmap('color1.png')
-			label = QtWidgets.QLabel(self.centralwidget)
-			label.setPixmap(pix)
-			label.setAlignment(QtCore.Qt.AlignCenter)
-			label.setStyleSheet("border:0px")
-			self.horizontalLayout.addWidget(label)
-
-			self.isInputOpen = True
+		R, C, B = self.Img.shape
+		qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		
+		#pix = QtGui.QPixmap('color1.png')
+		self.label = QtWidgets.QLabel(self.centralwidget)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+		self.label.setAlignment(QtCore.Qt.AlignCenter)
+		self.label.setStyleSheet("border:0px")
+		
+		self.horizontalLayout.addWidget(self.label)
 
 	def save_image(self):
 		raise NotImplementedError
@@ -180,7 +183,23 @@ class Window(QtWidgets.QMainWindow):
 		raise NotImplementedError
 
 	def median_filtering(self, size):
-		raise NotImplementedError
+
+		outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
+
+		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2), 3], dtype=np.uint8)
+		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)),:] = self.Img
+
+		for i in range(self.Img.shape[0]):
+			for j in range(self.Img.shape[1]):
+				outputImg[i,j,0] = np.median(expandedImage[i:i+size, j:j+size,0])
+				outputImg[i,j,1] = np.median(expandedImage[i:i+size, j:j+size,1])
+				outputImg[i,j,2] = np.median(expandedImage[i:i+size, j:j+size,2])
+
+		R, C, B = outputImg.shape
+		qImg = QtGui.QImage(outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+
 
 	def rotation_transform(self, size):
 		raise NotImplementedError
