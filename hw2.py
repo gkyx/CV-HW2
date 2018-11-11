@@ -19,6 +19,7 @@ class Window(QtWidgets.QMainWindow):
 		self.setWindowState(QtCore.Qt.WindowMaximized)
 
 		self.Img1 = None
+		self.outputImg = None
 		self.isInputOpen = False
 
 		mainMenu = self.menuBar()
@@ -191,14 +192,14 @@ class Window(QtWidgets.QMainWindow):
 	def scale_transform(self, size):
 		multiplier = 1 / size
 
-		outputImg = np.zeros([int(self.Img.shape[0] // multiplier), int(self.Img.shape[1] // multiplier), 3], dtype=np.uint8)
+		self.outputImg = np.zeros([int(self.Img.shape[0] // multiplier), int(self.Img.shape[1] // multiplier), 3], dtype=np.uint8)
 
-		for i in range(outputImg.shape[0]):
-			for j in range(outputImg.shape[1]):
-				outputImg[i,j,:] = np.round(self.bicubic_interpolation(i * multiplier, j * multiplier))
+		for i in range(self.outputImg.shape[0]):
+			for j in range(self.outputImg.shape[1]):
+				self.outputImg[i,j,:] = np.round(self.bicubic_interpolation(i * multiplier, j * multiplier))
 
-		R, C, B = outputImg.shape
-		qImg = QtGui.QImage(outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
 
