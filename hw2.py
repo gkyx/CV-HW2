@@ -160,7 +160,7 @@ class Window(QtWidgets.QMainWindow):
 
 	def open_image(self):
 		# Image
-		self.Img = cv2.imread("color1.png")
+		self.Img = cv2.imread("input.png")
 
 		R, C, B = self.Img.shape
 		qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
