@@ -19,6 +19,7 @@ class Window(QtWidgets.QMainWindow):
 		self.setWindowState(QtCore.Qt.WindowMaximized)
 
 		self.Img1 = None
+		self.outputImg = None
 		self.isInputOpen = False
 
 		mainMenu = self.menuBar()
@@ -184,19 +185,19 @@ class Window(QtWidgets.QMainWindow):
 
 	def median_filtering(self, size):
 
-		outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
+		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
 
 		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2), 3], dtype=np.uint8)
 		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)),:] = self.Img
 
 		for i in range(self.Img.shape[0]):
 			for j in range(self.Img.shape[1]):
-				outputImg[i,j,0] = np.median(expandedImage[i:i+size, j:j+size,0])
-				outputImg[i,j,1] = np.median(expandedImage[i:i+size, j:j+size,1])
-				outputImg[i,j,2] = np.median(expandedImage[i:i+size, j:j+size,2])
+				self.outputImg[i,j,0] = np.median(expandedImage[i:i+size, j:j+size,0])
+				self.outputImg[i,j,1] = np.median(expandedImage[i:i+size, j:j+size,1])
+				self.outputImg[i,j,2] = np.median(expandedImage[i:i+size, j:j+size,2])
 
-		R, C, B = outputImg.shape
-		qImg = QtGui.QImage(outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
 
