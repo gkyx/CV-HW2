@@ -255,7 +255,23 @@ class Window(QtWidgets.QMainWindow):
 		self.label.setPixmap(pix)
 
 	def translate_transform(self, size):
-		raise NotImplementedError
+		if size == 1:
+			self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1] + 20, 3], dtype=np.uint8)
+			for i in range(self.outputImg.shape[0]):
+				for j in range(self.outputImg.shape[1]):
+					if j - 20 >= 0:
+						self.outputImg[i,j,:] = self.Img[i, j - 20,:]
+		elif size == -1:
+			self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1] + 20, 3], dtype=np.uint8)
+			for i in reversed(range(self.outputImg.shape[0])):
+				for j in reversed(range(self.outputImg.shape[1])):
+					if j <= self.Img.shape[1] - 1:
+						self.outputImg[i,j,:] = self.Img[i, j,:]
+
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 	def bicubic_interpolation(self, x, y):
 		
