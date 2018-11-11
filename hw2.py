@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import floor, pi, exp
 from PyQt5 import QtGui, QtCore, QtWidgets
+from math import floor
 
 ############
 # Gokay Gas
@@ -17,8 +18,8 @@ class Window(QtWidgets.QMainWindow):
 		super(Window, self).__init__()
 		self.setWindowTitle("Filtering & Geometric Transforms")
 		self.setWindowState(QtCore.Qt.WindowMaximized)
-
-		self.Img1 = None
+    
+		self.Img = None
 		self.outputImg = None
 		self.isInputOpen = False
 
@@ -154,7 +155,7 @@ class Window(QtWidgets.QMainWindow):
 		self.horizontalLayout.setContentsMargins(100, 10, 100, 10)
 		self.horizontalLayout.setSpacing(100)
 		self.setCentralWidget(self.centralwidget)
-		
+
 		self.show()
 
 
@@ -178,7 +179,23 @@ class Window(QtWidgets.QMainWindow):
 		raise NotImplementedError
 
 	def average_filtering(self, size):
-		raise NotImplementedError
+
+		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
+
+		kernel = np.zeros([size, size, 3], dtype=np.uint8)
+		kernel[:,:,:] = 1
+
+		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2), 3], dtype=np.uint8)
+		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)),:] = self.Img
+
+		for i in range(self.Img.shape[0]):
+			for j in range(self.Img.shape[1]):
+				self.outputImg[i,j,:] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size,:]),0),0) // (size*size)
+
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 	def gaussian_filtering(self, size):
 		standardDeviation = 0.2 * size
