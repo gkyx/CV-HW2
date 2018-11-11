@@ -18,6 +18,7 @@ class Window(QtWidgets.QMainWindow):
 		self.setWindowState(QtCore.Qt.WindowMaximized)
 
 		self.Img1 = None
+		self.outputImg = None
 		self.isInputOpen = False
 
 		mainMenu = self.menuBar()
@@ -157,18 +158,20 @@ class Window(QtWidgets.QMainWindow):
 
 
 	def open_image(self):
-		# one function for both of the input and target images
-		if not self.isInputOpen:
-			# Image
+		# Image
+		self.Img = cv2.imread("color1.png")
 
-			pix = QtGui.QPixmap('color1.png')
-			label = QtWidgets.QLabel(self.centralwidget)
-			label.setPixmap(pix)
-			label.setAlignment(QtCore.Qt.AlignCenter)
-			label.setStyleSheet("border:0px")
-			self.horizontalLayout.addWidget(label)
-
-			self.isInputOpen = True
+		R, C, B = self.Img.shape
+		qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		
+		#pix = QtGui.QPixmap('color1.png')
+		self.label = QtWidgets.QLabel(self.centralwidget)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+		self.label.setAlignment(QtCore.Qt.AlignCenter)
+		self.label.setStyleSheet("border:0px")
+		
+		self.horizontalLayout.addWidget(self.label)
 
 	def save_image(self):
 		raise NotImplementedError
@@ -189,8 +192,23 @@ class Window(QtWidgets.QMainWindow):
 		raise NotImplementedError
 
 	def translate_transform(self, size):
-		raise NotImplementedError
+		if size == 1:
+			self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1] + 20, 3], dtype=np.uint8)
+			for i in range(self.outputImg.shape[0]):
+				for j in range(self.outputImg.shape[1]):
+					if j - 20 >= 0:
+						self.outputImg[i,j,:] = self.Img[i, j - 20,:]
+		elif size == -1:
+			self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1] + 20, 3], dtype=np.uint8)
+			for i in reversed(range(self.outputImg.shape[0])):
+				for j in reversed(range(self.outputImg.shape[1])):
+					if j <= self.Img.shape[1] - 1:
+						self.outputImg[i,j,:] = self.Img[i, j,:]
 
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
