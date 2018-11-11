@@ -19,6 +19,7 @@ class Window(QtWidgets.QMainWindow):
 		self.setWindowState(QtCore.Qt.WindowMaximized)
 
 		self.Img = None
+		self.outputImg = None
 		self.isInputOpen = False
 
 		mainMenu = self.menuBar()
@@ -178,7 +179,7 @@ class Window(QtWidgets.QMainWindow):
 
 	def average_filtering(self, size):
 
-		outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
+		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
 
 		kernel = np.zeros([size, size, 3], dtype=np.uint8)
 		kernel[:,:,:] = 1
@@ -188,10 +189,10 @@ class Window(QtWidgets.QMainWindow):
 
 		for i in range(self.Img.shape[0]):
 			for j in range(self.Img.shape[1]):
-				outputImg[i,j,:] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size,:]),0),0) // (size*size)
+				self.outputImg[i,j,:] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size,:]),0),0) // (size*size)
 
-		R, C, B = outputImg.shape
-		qImg = QtGui.QImage(outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		R, C, B = self.outputImg.shape
+		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
 		self.label.setPixmap(pix)
 
