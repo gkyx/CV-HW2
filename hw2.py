@@ -2,6 +2,7 @@ import cv2
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from math import floor
 from PyQt5 import QtGui, QtCore, QtWidgets
 
 ############
@@ -157,18 +158,20 @@ class Window(QtWidgets.QMainWindow):
 
 
 	def open_image(self):
-		# one function for both of the input and target images
-		if not self.isInputOpen:
-			# Image
+		# Image
+		self.Img = cv2.imread("color1.png")
 
-			pix = QtGui.QPixmap('color1.png')
-			label = QtWidgets.QLabel(self.centralwidget)
-			label.setPixmap(pix)
-			label.setAlignment(QtCore.Qt.AlignCenter)
-			label.setStyleSheet("border:0px")
-			self.horizontalLayout.addWidget(label)
-
-			self.isInputOpen = True
+		R, C, B = self.Img.shape
+		qImg = QtGui.QImage(self.Img.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		
+		#pix = QtGui.QPixmap('color1.png')
+		self.label = QtWidgets.QLabel(self.centralwidget)
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
+		self.label.setAlignment(QtCore.Qt.AlignCenter)
+		self.label.setStyleSheet("border:0px")
+		
+		self.horizontalLayout.addWidget(self.label)
 
 	def save_image(self):
 		raise NotImplementedError
@@ -186,11 +189,70 @@ class Window(QtWidgets.QMainWindow):
 		raise NotImplementedError
 
 	def scale_transform(self, size):
-		raise NotImplementedError
+		print(self.Img[0,0,:])
+		print(" ")
+		print(np.round(self.bicubic_interpolation(0.4,0.5)))
 
 	def translate_transform(self, size):
 		raise NotImplementedError
 
+	def bicubic_interpolation(self, x, y):
+		
+		p = np.zeros([4,4,3], dtype='int64')
+
+		if(x >= 1 and x <= self.Img.shape[0] - 1 and y >= 1 and y <= self.Img.shape[1] - 1):
+			p[:,:,:] = self.Img[floor(x) - 1: floor(x) + 3, floor(y) - 1: floor(y) + 3,:]
+		else:
+			if x < 1:
+				p[0,1:3,:] = self.Img[floor(x), floor(y):floor(y) + 2, :]
+			elif x > self.Img.shape[0] - 1:
+				p[3,1:3,:] = self.Img[floor(x) + 1, floor(y):floor(y) + 2, :]
+			else:
+				p[0,1:3,:] = self.Img[floor(x) - 1, floor(y):floor(y) + 2, :]
+				p[3,1:3,:] = self.Img[floor(x) + 2, floor(y):floor(y) + 2, :]
+
+			if y < 1:
+				p[1:3,0,:] = self.Img[floor(x):floor(x) + 2, floor(y), :]
+			elif y > self.Img.shape[1] - 1:
+				p[1:3,3,:] = self.Img[floor(x):floor(x) + 2, floor(y) + 1, :]
+			else:
+				p[1:3,0,:] = self.Img[floor(x):floor(x) + 2, floor(y) - 1, :]
+				p[1:3,3,:] = self.Img[floor(x):floor(x) + 2, floor(y) + 2, :]
+
+			p[1:3,1:3,:] = self.Img[floor(x):floor(x) + 2, floor(y):floor(y) + 2, :]
+
+			p[0,0,:] = p[0,1,:] # northeast point gets the value from right
+			p[3,0,:] = p[3,1,:] # southeast point gets the value from right
+			p[0,3,:] = p[0,2,:] # northwest point gets the value from left
+			p[3,3,:] = p[3,2,:] # southwest point gets the value from left
+	
+		
+		a00 = p[1,1,:]
+		a01 = -.5*p[1,0,:] + .5*p[1,2,:]
+		a02 = p[1,0,:] - 2.5*p[1,1,:] + 2*p[1,2,:] - .5*p[1,3,:]
+		a03 = -.5*p[1,0,:] + 1.5*p[1,1,:] - 1.5*p[1,2,:] + .5*p[1,3,:]
+		a10 = -.5*p[0,1,:] + .5*p[2,1,:]
+		a11 = .25*p[0,0,:] - .25*p[0,2,:] - .25*p[2,0,:] + .25*p[2,2,:]
+		a12 = -.5*p[0,0,:] + 1.25*p[0,1,:] - p[0,2,:] + .25*p[0,3,:] + .5*p[2,0,:] - 1.25*p[2,1,:] + p[2,2,:] - .25*p[2,3,:]
+		a13 = .25*p[0,0,:] - .75*p[0,1,:] + .75*p[0,2,:] - .25*p[0,3,:] - .25*p[2,0,:] + .75*p[2,1,:] - .75*p[2,2,:] + .25*p[2,3,:]
+		a20 = p[0,1,:] - 2.5*p[1,1,:] + 2*p[2,1,:] - .5*p[3,1,:]
+		a21 = -.5*p[0,0,:] + .5*p[0,2,:] + 1.25*p[1,0,:] - 1.25*p[1,2,:] - p[2,0,:] + p[2,2,:] + .25*p[3,0,:] - .25*p[3,2,:]
+		a22 = p[0,0,:] - 2.5*p[0,1,:] + 2*p[0,2,:] - .5*p[0,3,:] - 2.5*p[1,0,:] + 6.25*p[1,1,:] - 5*p[1,2,:] + 1.25*p[1,3,:] + 2*p[2,0,:] - 5*p[2,1,:] + 4*p[2,2,:] - p[2,3,:] - .5*p[3,0,:] + 1.25*p[3,1,:] - p[3,2,:] + .25*p[3,3,:]
+		a23 = -.5*p[0,0,:] + 1.5*p[0,1,:] - 1.5*p[0,2,:] + .5*p[0,3,:] + 1.25*p[1,0,:] - 3.75*p[1,1,:] + 3.75*p[1,2,:] - 1.25*p[1,3,:] - p[2,0,:] + 3*p[2,1,:] - 3*p[2,2,:] + p[2,3,:] + .25*p[3,0,:] - .75*p[3,1,:] + .75*p[3,2,:] - .25*p[3,3,:]
+		a30 = -.5*p[0,1,:] + 1.5*p[1,1,:] - 1.5*p[2,1,:] + .5*p[3,1,:]
+		a31 = .25*p[0,0,:] - .25*p[0,2,:] - .75*p[1,0,:] + .75*p[1,2,:] + .75*p[2,0,:] - .75*p[2,2,:] - .25*p[3,0,:] + .25*p[3,2,:]
+		a32 = -.5*p[0,0,:] + 1.25*p[0,1,:] - p[0,2,:] + .25*p[0,3,:] + 1.5*p[1,0,:] - 3.75*p[1,1,:] + 3*p[1,2,:] - .75*p[1,3,:] - 1.5*p[2,0,:] + 3.75*p[2,1,:] - 3*p[2,2,:] + .75*p[2,3,:] + .5*p[3,0,:] - 1.25*p[3,1,:] + p[3,2,:] - .25*p[3,3,:]
+		a33 = .25*p[0,0,:] - .75*p[0,1,:] + .75*p[0,2,:] - .25*p[0,3,:] - .75*p[1,0,:] + 2.25*p[1,1,:] - 2.25*p[1,2,:] + .75*p[1,3,:] + .75*p[2,0,:] - 2.25*p[2,1,:] + 2.25*p[2,2,:] - .75*p[2,3,:] - .25*p[3,0,:] + .75*p[3,1,:] - .75*p[3,2,:] + .25*p[3,3,:]
+
+		x = x - floor(x)
+		y = y - floor(y)
+
+		x2 = x * x
+		x3 = x2 * x
+		y2 = y * y
+		y3 = y2 * y
+
+		return (a00 + a01 * y + a02 * y2 + a03 * y3) + (a10 + a11 * y + a12 * y2 + a13 * y3) * x + (a20 + a21 * y + a22 * y2 + a23 * y3) * x2 + (a30 + a31 * y + a32 * y2 + a33 * y3) * x3
 
 def main():
 	app = QtWidgets.QApplication(sys.argv)
