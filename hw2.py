@@ -175,7 +175,7 @@ class Window(QtWidgets.QMainWindow):
 		self.horizontalLayout.addWidget(self.label)
 
 	def save_image(self):
-		raise NotImplementedError
+		cv2.imwrite("./output-image.png", self.outputImg)
 
 	def average_filtering(self, size):
 
