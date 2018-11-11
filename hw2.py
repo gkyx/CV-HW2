@@ -189,23 +189,41 @@ class Window(QtWidgets.QMainWindow):
 		raise NotImplementedError
 
 	def scale_transform(self, size):
-		print(self.Img[0,0,:])
-		print(" ")
-		print(np.round(self.bicubic_interpolation(0.4,0.5)))
+		multiplier = 1 / size
+
+		outputImg = np.zeros([int(self.Img.shape[0] // multiplier), int(self.Img.shape[1] // multiplier), 3], dtype=np.uint8)
+
+		for i in range(outputImg.shape[0]):
+			for j in range(outputImg.shape[1]):
+				outputImg[i,j,:] = np.round(self.bicubic_interpolation(i * multiplier, j * multiplier))
+
+		R, C, B = outputImg.shape
+		qImg = QtGui.QImage(outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
+		pix = QtGui.QPixmap(qImg)
+		self.label.setPixmap(pix)
 
 	def translate_transform(self, size):
 		raise NotImplementedError
 
 	def bicubic_interpolation(self, x, y):
 		
+		if(floor(x) == x and floor(y) == y):
+			return self.Img[int(x),int(y),:]
+
+		if floor(x) == self.Img.shape[0] - 1:
+			x = self.Img.shape[0] - 2
+
+		if floor(y) == self.Img.shape[1] - 1:
+			y = self.Img.shape[1] - 2
+
 		p = np.zeros([4,4,3], dtype='int64')
 
-		if(x >= 1 and x <= self.Img.shape[0] - 1 and y >= 1 and y <= self.Img.shape[1] - 1):
+		if(x >= 1 and x < self.Img.shape[0] - 2 and y >= 1 and y < self.Img.shape[1] - 2):
 			p[:,:,:] = self.Img[floor(x) - 1: floor(x) + 3, floor(y) - 1: floor(y) + 3,:]
 		else:
 			if x < 1:
 				p[0,1:3,:] = self.Img[floor(x), floor(y):floor(y) + 2, :]
-			elif x > self.Img.shape[0] - 1:
+			elif x >= self.Img.shape[0] - 2:
 				p[3,1:3,:] = self.Img[floor(x) + 1, floor(y):floor(y) + 2, :]
 			else:
 				p[0,1:3,:] = self.Img[floor(x) - 1, floor(y):floor(y) + 2, :]
@@ -213,7 +231,7 @@ class Window(QtWidgets.QMainWindow):
 
 			if y < 1:
 				p[1:3,0,:] = self.Img[floor(x):floor(x) + 2, floor(y), :]
-			elif y > self.Img.shape[1] - 1:
+			elif y >= self.Img.shape[1] - 2:
 				p[1:3,3,:] = self.Img[floor(x):floor(x) + 2, floor(y) + 1, :]
 			else:
 				p[1:3,0,:] = self.Img[floor(x):floor(x) + 2, floor(y) - 1, :]
