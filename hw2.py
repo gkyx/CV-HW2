@@ -181,9 +181,11 @@ class Window(QtWidgets.QMainWindow):
 
 		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
 
+		# kernel full of 1's
 		kernel = np.zeros([size, size, 3], dtype=np.uint8)
 		kernel[:,:,:] = 1
 
+		# expand image for convolution
 		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2), 3], dtype=np.uint8)
 		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)),:] = self.Img
 
@@ -191,6 +193,7 @@ class Window(QtWidgets.QMainWindow):
 			for j in range(self.Img.shape[1]):
 				self.outputImg[i,j,:] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size,:]),0),0) // (size*size)
 
+		# show the outputted image
 		R, C, B = self.outputImg.shape
 		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
@@ -201,6 +204,7 @@ class Window(QtWidgets.QMainWindow):
 
 		self.outputImg = np.zeros([self.Img.shape[0], self.Img.shape[1], 3], dtype=np.uint8)
 
+		# prepare the gaussian kernel
 		kernel = np.zeros([size, size, 3], dtype='int64')
 		for i in range(size):
 			for j in range(size):
@@ -213,6 +217,7 @@ class Window(QtWidgets.QMainWindow):
 			for j in range(self.Img.shape[1]):
 				self.outputImg[i,j,:] = np.sum(np.sum((kernel*expandedImage[i:i+size, j:j+size,:]),0),0) // np.sum(np.sum(kernel, 0), 0)[0]
 
+		# show the outputted image
 		R, C, B = self.outputImg.shape
 		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
@@ -225,12 +230,14 @@ class Window(QtWidgets.QMainWindow):
 		expandedImage = np.zeros([self.Img.shape[0] + 2 * floor(size / 2), self.Img.shape[1] + 2 * floor(size / 2), 3], dtype=np.uint8)
 		expandedImage[floor(size / 2):(-floor(size / 2)),floor(size / 2):(-floor(size / 2)),:] = self.Img
 
+		# get the median of the box of pixels
 		for i in range(self.Img.shape[0]):
 			for j in range(self.Img.shape[1]):
 				self.outputImg[i,j,0] = np.median(expandedImage[i:i+size, j:j+size,0])
 				self.outputImg[i,j,1] = np.median(expandedImage[i:i+size, j:j+size,1])
 				self.outputImg[i,j,2] = np.median(expandedImage[i:i+size, j:j+size,2])
 
+		# show the outputted image
 		R, C, B = self.outputImg.shape
 		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
@@ -243,12 +250,15 @@ class Window(QtWidgets.QMainWindow):
 	def scale_transform(self, size):
 		multiplier = 1 / size
 
+		# output image with the new size
 		self.outputImg = np.zeros([int(self.Img.shape[0] // multiplier), int(self.Img.shape[1] // multiplier), 3], dtype=np.uint8)
 
+		# interpolate the backward mapped coordinates
 		for i in range(self.outputImg.shape[0]):
 			for j in range(self.outputImg.shape[1]):
 				self.outputImg[i,j,:] = np.round(self.bicubic_interpolation(i * multiplier, j * multiplier))
 
+		# show the outputted image
 		R, C, B = self.outputImg.shape
 		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
@@ -268,6 +278,7 @@ class Window(QtWidgets.QMainWindow):
 					if j <= self.Img.shape[1] - 1:
 						self.outputImg[i,j,:] = self.Img[i, j,:]
 
+		# show the outputted image
 		R, C, B = self.outputImg.shape
 		qImg = QtGui.QImage(self.outputImg.data, C, R, 3 * C, QtGui.QImage.Format_RGB888).rgbSwapped()
 		pix = QtGui.QPixmap(qImg)
@@ -312,6 +323,7 @@ class Window(QtWidgets.QMainWindow):
 			p[0,3,:] = p[0,2,:] # northwest point gets the value from left
 			p[3,3,:] = p[3,2,:] # southwest point gets the value from left
 	
+		# inspired from https://www.paulinternet.nl/?page=bicubic /// translated from java version to python
 		
 		a00 = p[1,1,:]
 		a01 = -.5*p[1,0,:] + .5*p[1,2,:]
